@@ -8,7 +8,7 @@
         
         <div id="login">
             <h2>Faça o Login no App</h2>
-            <form>
+            <form id="form-login">
                 <input type="email" name="email">
                 <input type="password" name="password">
                 <input type="submit" name="action" value="Logar!">
@@ -17,6 +17,11 @@
 
         <div id="container-login">
             <h2>Olá! Você está logado. <a href="javascript:void(0);" id="logout">logout</a></h2>
+            <form id="form-cadastro-tarefa">
+                <textarea name="tarefa"></textarea>
+                <input type="datetime-local" name="datetime">
+                <input type="submit" name="action" value="Cadastrar Tarefa">
+            </form>
         </div>
 
         <script type="module" src="./main.js"></script>

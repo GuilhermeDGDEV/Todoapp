@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.13.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/9.13.0/firebase-auth.js';
-import { getFirestore } from 'https://www.gstatic.com/firebasejs/9.13.0/firebase-firestore.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.13.0/firebase-auth.js';
+import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/9.13.0/firebase-firestore.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyAqYKaNRtVm5BIy1H-6iSJIGsH5jRMwnMg",
@@ -11,42 +11,75 @@ const firebaseConfig = {
     appId: "1:178807814369:web:971dae4d76f6cbb88f9fa0"
 };
 
+// Firebase variables
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// Front variables
 var user = null;
-const formLogin = document.querySelector('form');
+const formLogin = document.querySelector('#form-login');
+const formCadastroTarefa = document.querySelector('#form-cadastro-tarefa');
 const loginArea = document.querySelector('#login');
 const logout = document.querySelector('#logout');
 const containerLogado = document.querySelector('#container-login');
 
+// Events
 formLogin.addEventListener('submit', e => {
     e.preventDefault();
     const email = document.querySelector('[name=email]').value;
     const password = document.querySelector('[name=password]').value;
-    login(email, password);
+    
+    signInWithEmailAndPassword(auth, email, password)
+        .then(userCredential => user = userCredential.user)
+        .catch(error => alert(error.message));
 });
+
+formCadastroTarefa.addEventListener('submit', e => {
+    e.preventDefault();
+    const horario = document.querySelector('#form-cadastro-tarefa [name=datetime]').value;
+    const tarefa = document.querySelector('#form-cadastro-tarefa [name=tarefa]').value;
+    if (validaFormTarefa(horario, tarefa)) {
+        addDoc(collection(db, 'Tarefas'), { horario, tarefa });
+        alert('Tarefa adicionada!')
+        formCadastroTarefa.reset();
+    }
+})
 
 logout.addEventListener('click', e => {
     e.preventDefault();
     signOut(auth)
         .then(() => {
-            alert('Deslogado')
             loginArea.style.display = 'block';
             containerLogado.style.display = 'none';
         })
         .catch(error => alert(error.message));
 });
 
-function login(email, password) {
-    signInWithEmailAndPassword(auth, email, password)
-        .then(userCredential => {
-            user = userCredential.user;
-            alert('Logado com sucesso!');
-            loginArea.style.display = 'none';
-            containerLogado.style.display = 'block';
-            formLogin.reset();
-        })
-        .catch(error => alert(error.message));
+onAuthStateChanged(auth, res => {
+    if (res) {
+        loginArea.style.display = 'none';
+        containerLogado.style.display = 'block';
+        formLogin.reset();
+    }
+});
+
+function validaFormTarefa(horario, tarefa) {
+    if (!tarefa) {
+        alert('Informe a tarefa!');
+        return false;
+    }
+
+    if (!horario) {
+        alert('Informe a data e hora da tarefa!');
+        return false;
+    }
+
+    const agora = new Date().getTime();
+    if (agora > new Date(horario).getTime()) {
+        alert('Não é possível salvar uma tarefa no passado!');
+        return false;
+    }
+
+    return true;
 }
