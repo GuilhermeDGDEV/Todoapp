@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.13.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.13.0/firebase-auth.js';
-import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/9.13.0/firebase-firestore.js';
+import { getFirestore, collection, addDoc, query, where, onSnapshot } from 'https://www.gstatic.com/firebasejs/9.13.0/firebase-firestore.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyAqYKaNRtVm5BIy1H-6iSJIGsH5jRMwnMg",
@@ -17,7 +17,7 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 // Front variables
-var user = null;
+let user = null;
 const formLogin = document.querySelector('#form-login');
 const formCadastroTarefa = document.querySelector('#form-cadastro-tarefa');
 const loginArea = document.querySelector('#login');
@@ -40,8 +40,8 @@ formCadastroTarefa.addEventListener('submit', e => {
     const horario = document.querySelector('#form-cadastro-tarefa [name=datetime]').value;
     const tarefa = document.querySelector('#form-cadastro-tarefa [name=tarefa]').value;
     if (validaFormTarefa(horario, tarefa)) {
-        addDoc(collection(db, 'Tarefas'), { horario, tarefa });
-        alert('Tarefa adicionada!')
+        addDoc(collection(db, 'Tarefas'), { horario, tarefa, userId: user.uid });
+        alert('Tarefa adicionada!');
         formCadastroTarefa.reset();
     }
 })
@@ -56,11 +56,18 @@ logout.addEventListener('click', e => {
         .catch(error => alert(error.message));
 });
 
-onAuthStateChanged(auth, res => {
+onAuthStateChanged(auth, async res => {
     if (res) {
+        user = res;
         loginArea.style.display = 'none';
         containerLogado.style.display = 'block';
         formLogin.reset();
+
+        const q = query(collection(db, 'Tarefas'), where('userId', '==', user.uid));
+        onSnapshot(q, querySnapshot => {
+            let list = document.querySelector('#tarefas-usuario ul');
+            querySnapshot.forEach(d => list.innerHTML += `<li>${d.data().tarefa}</li>`);
+        });
     }
 });
 
