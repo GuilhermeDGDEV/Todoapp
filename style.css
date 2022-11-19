@@ -1,3 +1,8 @@
 #container-login {
     display: none;
 }
+
+.excluir-btn {
+    color: red;
+    text-decoration: none;
+}

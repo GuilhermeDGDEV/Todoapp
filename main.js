@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.13.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.13.0/firebase-auth.js';
-import { getFirestore, collection, addDoc, query, where, onSnapshot } from 'https://www.gstatic.com/firebasejs/9.13.0/firebase-firestore.js';
+import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.13.0/firebase-firestore.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyAqYKaNRtVm5BIy1H-6iSJIGsH5jRMwnMg",
@@ -40,7 +40,7 @@ formCadastroTarefa.addEventListener('submit', e => {
     const horario = document.querySelector('#form-cadastro-tarefa [name=datetime]').value;
     const tarefa = document.querySelector('#form-cadastro-tarefa [name=tarefa]').value;
     if (validaFormTarefa(horario, tarefa)) {
-        addDoc(collection(db, 'Tarefas'), { horario, tarefa, userId: user.uid });
+        addDoc(collection(db, 'Tarefas'), { horario: new Date(horario).getTime(), tarefa, userId: user.uid });
         alert('Tarefa adicionada!');
         formCadastroTarefa.reset();
     }
@@ -56,7 +56,7 @@ logout.addEventListener('click', e => {
         .catch(error => alert(error.message));
 });
 
-onAuthStateChanged(auth, async res => {
+onAuthStateChanged(auth, res => {
     if (res) {
         user = res;
         loginArea.style.display = 'none';
@@ -64,9 +64,22 @@ onAuthStateChanged(auth, async res => {
         formLogin.reset();
 
         const q = query(collection(db, 'Tarefas'), where('userId', '==', user.uid));
-        onSnapshot(q, querySnapshot => {
-            let list = document.querySelector('#tarefas-usuario ul');
-            querySnapshot.forEach(d => list.innerHTML += `<li>${d.data().tarefa}</li>`);
+        onSnapshot(q, data => {
+            const list = document.querySelector('#tarefas-usuario ul');
+            list.innerHTML = '';
+            data.docs
+                .sort((a, b) => a.data().horario < b.data().horario ? -1 : +1)
+                .map(doc => list.innerHTML += `
+                        <li>
+                            ${doc.data().tarefa}
+                            <a tarefa-id='${doc.id}' class='excluir-btn' href='javascript:void(0)'>(X)</a>
+                        </li>
+                    `);
+
+            document.querySelectorAll('.excluir-btn').forEach(elem => elem.addEventListener('click', e => {
+                e.preventDefault();
+                deleteDoc(doc(db, 'Tarefas', elem.getAttribute('tarefa-id')));
+            }));
         });
     }
 });
